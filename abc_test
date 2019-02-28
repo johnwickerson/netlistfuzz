@@ -1,0 +1,365 @@
+shun@shun-Surface-Pro-4:~/abc-master$ ./abc
+UC Berkeley, ABC 1.01 (compiled Feb 19 2019 10:09:12)
+abc 01> read adder.v
+abc 02> b;rw;rwz;b;rwz;b
+abc 05> pg
+Error: Printing gates does not work for AIGs and sequential AIGs.
+abc 05> ps
+half_adder                    : i/o =    2/    2  lat =    0  and =      4  lev =  2
+abc 05> pio
+Primary inputs (2):  0=a 1=b
+Primary outputs (2): 0=sum 1=cout
+Latches (0):  
+abc 05> cec
+Networks are equivalent after structural hashing.  Time =     0.00 sec
+abc 05> wv new_adder.v
+abc 05> wl adder_blif
+abc 05> cl
+Cleanup removed 0 primary inputs without fanout.
+Cleanup removed 0 primary outputs driven by const-0.
+abc 06> empty
+abc 06> ps
+Error: Empty network.
+abc 06> read adder_blif
+Generic file reader requires a known file extension to open "adder_blif".
+abc 06> r adder_blif
+Generic file reader requires a known file extension to open "adder_blif".
+abc 06> rl adder_blif
+abc 07> ps
+half_adder                    : i/o =    2/    2  lat =    0  nd =     4  edge =      8  cube =     4  lev = 2
+abc 07> print_auto
+Error: This command works only for AIGs (run "strash").
+abc 07> strash
+abc 08> ps
+half_adder                    : i/o =    2/    2  lat =    0  and =      4  lev =  2
+abc 08> empty
+abc 08> undo
+Empty network.
+abc 08> r adder.v
+abc 09> ps
+half_adder                    : i/o =    2/    2  lat =    0  nd =     2  edge =      4  aig  =     4  lev = 1
+abc 09> b -l;rw -l;rwz -l;b -l;rwz -l;b -l;
+abc 12> p
+** cmd error: unknown command 'p'
+(this is likely caused by using an alias defined in "abc.rc"
+without having this file in the current or parent directory)
+abc 12> ps
+half_adder                    : i/o =    2/    2  lat =    0  and =      4  lev =  2
+abc 12> empty
+abc 12> ps
+Error: Empty network.
+abc 12> read adder_blif
+Generic file reader requires a known file extension to open "adder_blif".
+abc 12> rl adder_blif
+abc 13> undc;strash;zero
+Warning: The current network is combinational.
+Warning: The current network is combinational.
+abc 14> ps
+half_adder                    : i/o =    2/    2  lat =    0  and =      4  lev =  2
+abc 14> recadd3
+Error: This command works for AIGs after calling "rec_start2".
+Error: This command works for AIGs after calling "rec_start2".
+Error: This command works for AIGs after calling "rec_start2".
+Error: This command works for AIGs after calling "rec_start2".
+Error: This command works for AIGs after calling "rec_start2".
+Error: This command works for AIGs after calling "rec_start2".
+abc 22> blif2aig
+Warning: The current network is combinational.
+Warning: The current network is combinational.
+abc 23> ps
+half_adder                    : i/o =    2/    2  lat =    0  and =      3  lev =  2
+abc 23> cycle
+Error: The network is combinational.
+abc 23> collapse
+abc 24> ps
+half_adder                    : i/o =    2/    2  lat =    0  nd =     2  edge =      4  bdd  =     4  lev = 1
+abc 24> resyn
+abc 27> ps
+half_adder                    : i/o =    2/    2  lat =    0  and =      4  lev =  2
+abc 27> b
+abc 28> ps
+half_adder                    : i/o =    2/    2  lat =    0  and =      4  lev =  2
+abc 28> cec
+Generic file reader requires a known file extension to open "adder_blif".
+abc 28> r i10.aig
+abc 29> b
+abc 30> ps
+i10                           : i/o =  257/  224  lat =    0  and =   2396  lev = 37
+abc 30> r adder.v
+abc 31> b
+abc 32> ps
+half_adder                    : i/o =    2/    2  lat =    0  and =      4  lev =  2
+abc 32> cec
+Networks are equivalent after structural hashing.  Time =     0.00 sec
+abc 32> r i10.aig
+abc 33> ps
+i10                           : i/o =  257/  224  lat =    0  and =   2675  lev = 50
+abc 33> b
+abc 34> resyn
+abc 37> ps
+i10                           : i/o =  257/  224  lat =    0  and =   1875  lev = 32
+abc 37> cec
+Networks are equivalent.  Time =     0.26 sec
+abc 37> print_ysmm
+** cmd error: unknown command 'print_ysmm'
+(this is likely caused by using an alias defined in "abc.rc"
+without having this file in the current or parent directory)
+abc 37> pring_symm
+** cmd error: unknown command 'pring_symm'
+(this is likely caused by using an alias defined in "abc.rc"
+without having this file in the current or parent directory)
+abc 37> history
+20 : wl adder_blif
+19 : r adder_blif
+18 : print_auto
+17 : strash
+16 : undo
+15 : r adder.v
+14 : b -l;rw -l;rwz -l;b -l;rwz -l;b -l;
+13 : empty
+12 : read adder_blif
+11 : rl adder_blif
+10 : undc;strash;zero
+ 9 : recadd3
+ 8 : blif2aig
+ 7 : cycle
+ 6 : collapse
+ 5 : r adder.v
+ 4 : r i10.aig
+ 3 : resyn
+ 2 : print_ysmm
+ 1 : pring_symm
+abc 37> help
+      Welcome to ABC compiled on Feb 19 2019 10:00:32!
+
+ABC9 commands:
+ &acec            &add1hot         &anorm           &append         
+ &atree           &b               &back_reach      &bcore          
+ &bidec           &blut            &bmc             &bmci           
+ &bmcs            &cec             &cexinfo         &cfraig         
+ &cfs             &chainbmc        &choice          &cof            
+ &cone            &cycle           &dc2             &dch            
+ &decla           &demiter         &dfs             &dsd            
+ &dsdb            &edge            &embed           &enable         
+ &equiv           &equiv2          &equiv3          &equiv_filter   
+ &equiv_mark      &era             &esop            &exorcism       
+ &fadds           &false           &fftest          &filter         
+ &flow            &flow2           &flow3           &force          
+ &fraig           &frames          &fx              &gen            
+ &genqbf          &get             &glucose         &gprove         
+ &icheck          &if              &if2             &iff            
+ &iiff            &inse            &iso             &isonpn         
+ &isost           &jf              &kf              &lcorr          
+ &lf              &load            &load2           &loadaig        
+ &maxi            &mesh            &mf              &mfs            
+ &mfsd            &miter           &miter2          &mprove         
+ &nf              &of              &pack            &pfan           
+ &polyn           &popart          &posplit         &poxsim         
+ &profile         &ps              &psig            &put            
+ &qbf             &qvar            &r               &reachm         
+ &reachn          &reachp          &reachy          &read           
+ &read_blif       &read_cblif      &read_stg        &read_ver       
+ &reduce          &resim           &retime          &rex2gia        
+ &rexwalk         &rpm             &sat             &satclp         
+ &satenum         &satfx           &satlut          &sattest        
+ &save            &save2           &saveaig         &scl            
+ &scorr           &semi            &setregnum       &show           
+ &shrink          &sim             &sim3            &slice          
+ &sopb            &speci           &speedup         &splitprove     
+ &srm             &srm2            &st              &status         
+ &struct          &sweep           &syn2            &syn3           
+ &syn4            &synch2          &test            &times          
+ &topand          &trace           &trim            &unate          
+ &undo            &unmap           &verify          &w              
+ &wlut            &write           &write_ver      
+
+Abstraction commands:
+ &abs_derive      &abs_refine      &fla_gla         &gla            
+ &gla_derive      &gla_fla         &gla_refine      &gla_shrink     
+ &gla_vta         &vta             &vta_gla        
+
+Basic commands:
+ abcrc            alias            echo             empty           
+ help             history          quit             recall          
+ set              source           time             unalias         
+ undo             unset            version         
+
+Choicing commands:
+ rec_add3         rec_dump3        rec_merge3       rec_ps3         
+ rec_start3       rec_stop3       
+
+DSD manager commands:
+ dsd_filter       dsd_free         dsd_load         dsd_match       
+ dsd_merge        dsd_ps           dsd_save        
+
+Exact synthesis commands:
+ allexact         bms_ps           bms_start        bms_stop        
+ lutexact         majexact         majgen           testexact       
+ twoexact        
+
+FPGA mapping commands:
+ if               ifif             print_box        print_lut       
+ read_box         read_lut        
+
+Fraiging commands:
+ dress            dump_equiv       fraig            fraig_clean     
+ fraig_restore    fraig_store      fraig_sweep      fraig_trust     
+
+I/O commands:
+ &read_gig        &write_cnf       &write_truths    read            
+ read_aiger       read_baf         read_bblif       read_bench      
+ read_blif        read_blif_mv     read_dsd         read_eqn        
+ read_fins        read_init        read_json        read_pla        
+ read_plamo       read_status      read_truth       read_verilog    
+ write            write_aiger      write_aiger_cex  write_baf       
+ write_bblif      write_bench      write_blif       write_blif_mv   
+ write_book       write_cellnet    write_cex        write_cnf       
+ write_dot        write_eqn        write_gml        write_hie       
+ write_json       write_pla        write_smv        write_sorter_cnf
+ write_status     write_truth      write_verilog   
+
+Liveness commands:
+ kcs              l2s              l2ssim           l3s             
+ nck             
+
+LogiCS commands:
+ testrpo         
+
+New AIG commands:
+ csweep           dc2              dch              dchoice         
+ dfraig           drf              drw              drwsat          
+ icut             ifraig           iresyn           irw             
+ irws             isat             istrash          qbf             
+
+New word level commands:
+ :blast           :cec             :clp             :get            
+ :ps              :put             :read            :test           
+ :write           @_cec            @_clp            @_get           
+ @_ps             @_put            @_read           @_test          
+ @_write         
+
+Printing commands:
+ print_auto       print_cone       print_delay      print_dsd       
+ print_exdc       print_factor     print_fanio      print_gates     
+ print_io         print_kmap       print_latch      print_level     
+ print_mffc       print_mint       print_miter      print_sharing   
+ print_stats      print_status     print_supp       print_symm      
+ print_unate      print_xcut       show             show_bdd        
+ show_cut        
+
+SC mapping commands:
+ amap             attach           map              phase_map       
+ print_genlib     print_library    print_profile    read_genlib     
+ read_library     read_profile     read_super       super           
+ super2           superc           supercl          timescale       
+ unmap            write_genlib     write_library    write_profile   
+
+SCL mapping commands:
+ buffer           dnsize           dump_genlib      leak2area       
+ maxsize          minsize          print_buf        print_constr    
+ print_gs         print_lib        read_constr      read_lib        
+ read_scl         reset_constr     stime            topo            
+ unbuffer         upsize           write_constr     write_lib       
+ write_scl       
+
+Sequential commands:
+ clockgate        cretime          cubeenum         cycle           
+ dretime          extwin           fretime          funenum         
+ init             inswin           lcorr            onehot          
+ pathenum         permute          phase            retime          
+ scleanup         scorr            sim              sim3            
+ ssweep           synch            testscorr        testssw         
+ undc             unpermute        xsim             zero            
+
+Synthesis commands:
+ addbuffs         balance          cascade          cleanup         
+ collapse         dsd              eliminate        exact           
+ extract          faultclasses     fx               fxch            
+ glitch           logicpush        lutmin           lutpack         
+ merge            mfs              mfs2             mfs3            
+ mfse             multi            mux_struct       powerdown       
+ refactor         renode           resub            rewrite         
+ runeco           satclp           sparsify         speedup         
+ strash           sweep            testdec          testnpn         
+ trace            varmin          
+
+Two-level commands:
+ |gen             |merge           |ps              |read           
+ |test            |write          
+
+Various commands:
+ addpi            aig              andpos           append          
+ autotuner        backup           bb2wb            bdd             
+ bidec            capo             care_set         cof             
+ comb             cone             cover            cubes           
+ cut              demiter          dframes          double          
+ dropsat          espresso         exdc_free        exdc_get        
+ exdc_set         expand           ext_seq_dcs      frames          
+ gen              genfsm           inter            load_plugin     
+ logic            minisat          minisimp         miter           
+ move_names       muxes            mvsis            node            
+ nodedup          npnload          npnsave          order           
+ orpos            outdec           putontop         qreach          
+ qrel             qvar             reach            removepo        
+ reorder          restore          send_aig         send_status     
+ senseinput       short_names      sis              sop             
+ splitsop         starter          swappos          test            
+ testcolor        topand           topmost          trim            
+ zeropo          
+
+Verification commands:
+ &sat3            &satoko          absec            blockpo         
+ bm               bm2              bmc              bmc2            
+ bmc3             cec              cexcut           cexload         
+ cexmerge         cexsave          constr           dcec            
+ debug            dprove           dsat             dsec            
+ dualrail         eco              enlarge          fold            
+ fold2            ind              indcut           int             
+ iprove           iso              match            pdr             
+ prove            psat             reconcile        sat             
+ satoko           saucy3           simsec           tempor          
+ testcex          unfold           unfold2          xsat            
+
+Word level commands:
+ %abs             %abs2            %blast           %blastmem       
+ %cone            %graft           %memabs          %memabs2        
+ %pdra            %profile         %ps              %read           
+ %retime          %short_names     %show            %test           
+ %write           inv_check        inv_get          inv_min         
+ inv_print        inv_ps           inv_put         
+abc 37> fold
+Warning: The network has no constraints.
+abc 37> bm
+Network  strashing is done!
+Total func supps   =     5438.
+Total struct supps =     5684.
+Sat runs SAT       =       49.
+Sat runs UNSAT     =      246.
+Simulation   =     0.45 sec
+Traversal    =     0.04 sec
+Fraiging     =     0.46 sec
+SAT          =     0.11 sec
+TOTAL        =     1.60 sec
+Total func supps   =     5438.
+Total struct supps =     5692.
+Sat runs SAT       =       44.
+Sat runs UNSAT     =      254.
+Simulation   =     0.67 sec
+Traversal    =     0.05 sec
+Fraiging     =     0.63 sec
+SAT          =     0.12 sec
+TOTAL        =     2.22 sec
+Getting dependencies is done!
+Initializing match lists is done!
+Refining IOs by dependencies ... done!
+Refining IOs by simulation ... done!
+SAT-based search started ...
+*** Circuits are equivalent ***
+Init Time = 3.83
+Simulation Time = 0.10
+SAT Time = 15.80
+Overall Time = 19.73
+abc 37> ps
+i10                           : i/o =  257/  224  lat =    0  and =   1875  lev = 32
+abc 37> 
+
