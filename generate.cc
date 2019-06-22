@@ -47,9 +47,9 @@ const char *arg_types[][3] = {
 	{ "{dir} {name}", "{name}", "4" },	// 00
 	{ "{dir} {name}", "{name}", "5" },	// 01
 	{ "{dir} {name}", "{name}", "6" },	// 02
-	{ "{dir} signed {name}", "{name}", "4" },	// 03
-	{ "{dir} signed {name}", "{name}", "5" },	// 04
-	{ "{dir} signed {name}", "{name}", "6" }	// 05
+	{ "{dir} {name}", "{name}", "4" },	// 03
+	{ "{dir} {name}", "{name}", "5" },	// 04
+	{ "{dir} {name}", "{name}", "6" }	// 05
 };
 
 const char *small_arg_types[][3] = {
@@ -143,8 +143,10 @@ void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool
 		char var_char;
 		int var_index;
 		if (!avoid_undef && (xorshift32() % 256) > (mask >> 24)) {
-			var_char = 'p';
-			var_index = xorshift32() % (3*num_arg_types);
+			//var_char = 'p';
+			var_char='b';
+			var_index = xorshift32() % num_arg_types;
+			//var_index = xorshift32() % (3*num_arg_types);
 		} else {
 			var_char = 'a' + (xorshift32() % 2);
 			var_index = xorshift32() % num_arg_types;
@@ -688,7 +690,7 @@ int main()
 		for (char var = 'a'; var <= 'y'; var++) {
 			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 3 : 1); j++) {
 				std::string decl = arg_types[j % SIZE(arg_types)][0];
-				strsubst(decl, "{dir}", var == 'y' ? "wire" : "input");
+				strsubst(decl, "{dir}", var == 'y' ? "output" : "input");
 				snprintf(buffer, 1024, "%c%d", var, j);
 				strsubst(decl, "{name}", buffer);
 				fprintf(f, "  %s;\n", decl.c_str());
@@ -698,18 +700,18 @@ int main()
 			fprintf(f, "\n");
 		}
 
-		int total_y_size = 0;
+		/*/int total_y_size = 0;
 		for (int j = 0; j < SIZE(arg_types)*3; j++)
-			total_y_size++/* = atoi(arg_types[j % SIZE(arg_types)][2])*/;
+			total_y_size++ //= atoi(arg_types[j % SIZE(arg_types)][2]);
 		fprintf(f, "  output [%d:0] y;\n", total_y_size-1);
 
 		fprintf(f, "  assign y = {");
 		for (int j = 0; j < SIZE(arg_types)*3; j++)
 			fprintf(f, "%sy%d", j ? "," : "", j);
 		fprintf(f, "};\n");
-		fprintf(f, "\n");
+		fprintf(f, "\n");*/
 
-		for (int j = 0; j < SIZE(arg_types)*3; j++) {
+		/*for (int j = 0; j < SIZE(arg_types)*3; j++) {
 			std::string decl = arg_types[j % SIZE(arg_types)][0];
 			strsubst(decl, "{dir}", "localparam");
 			snprintf(buffer, 1024, "p%d", j);
@@ -718,7 +720,7 @@ int main()
 			print_expression(f, 1 + xorshift32() % 15, 0, false, false, true);
 			fprintf(f, ";\n");
 		}
-		fprintf(f, "\n");
+		fprintf(f, "\n");*/
 
 		for (int j = 0; j < SIZE(arg_types)*3; j++) {
 			fprintf(f, "  assign y%d = ", j);
