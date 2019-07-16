@@ -1,10 +1,8 @@
 #!/bin/bash
-set -e
+set +e
 
 mkdir -p check_abc
-rm -f check_abc/${1}_abc.txt
-
-rm -rf temp/check_abc_$1
+#rm -f check_abc/abc.txt
 
 #cat > synth.scr <<- EOT
 #	read_verilog half_adder.v;
@@ -15,23 +13,34 @@ rm -rf temp/check_abc_$1
 NumofCra=0
 NumofErr=0
 NumofSucc=0
-for loop in $(seq 1 10)
+
+for loop in $(seq 0 100)
 do
-./abc -c "rv rtl/expression_0000$loop.v; b; ps; cec; quit;"
-while getopts "equivalent:crash" arg;do
-echo "Hello"
-case "$arg" in
-	equivalent)
-		((NumofSucc++))
-		;;
-	crash)
-		((NumofCra++))
-		;;
+	#> abc.txt
+./abc -c "rv rtl/expression_$loop.v; b; ps; cec; quit;" > ./check_abc/abc_$loop.txt
+#./abc -c "rv half_adder.v; b; ps; cec; quit;" > ./check_abc/abc_$loop.txt
+#echo "Hello"
+grep "equivalent" ./check_abc/abc_$loop.txt
+equ=$?
+equ=$((1 - equ))
+grep "crash" ./check_abc/abc_$loop.txt
+cra=$?
+cra=$((1 - cra))
+
+case "$equ" in
+	1)
+		NumofSucc=$((NumofSucc + 1))
+	;;
 	*)
-		((NumofErr++))
-		;;
+	if [$cra -eq 1]; then
+		NumofCra=$((NumofCra + 1))
+	else
+		NumofErr=$((NumofErr + 1))
+	fi
+	;;
 esac
-done
+
+#done
 echo "Number of Crashes"
 echo $NumofCra
 echo "NUmber of Error"
@@ -40,5 +49,5 @@ echo "Number of success"
 echo $NumofSucc
 #-c source synth.scr
 echo "Iteration:"
-echo $loop
+echo $loop+1
 done
