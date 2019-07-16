@@ -19,7 +19,7 @@
 #define BIG_N  1000
 #define SMALL_N 100
 
-#define XORSHIFT_SEED 20140925
+#define XORSHIFT_SEED 20190716
 
 #undef GENERATE_BINARY_OPS
 #undef GENERATE_UNARY_OPS
@@ -63,9 +63,14 @@ const char *small_arg_types[][3] = {
 
 // See Table 5-1 (page 42) in IEEE Std 1364-2005
 // for a list of all Verilog oprators.
-
+const char *bitwise_ops[]={
+	"&",	// 1
+	"|",	// 2
+	"^",	// 3
+	"^~",	// 4
+};
 const char *binary_ops[] = {
-	"+",	// 00
+	"+",	// 00 y = &x
 	"-",	// 01
 	"*",	// 02
 	"/",	// 03
@@ -129,14 +134,15 @@ uint32_t xorshift32(uint32_t seed = 0) {
 void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool avoid_signed, bool in_param)
 {
 	bool avoid_mult_div_mod = false;
-	int num_binary_ops = SIZE(binary_ops);
-	int num_unary_ops = SIZE(unary_ops);
-	int num_arg_types = SIZE(arg_types);
+	int num_binary_ops = SIZE(binary_ops);//24
+	int num_unary_ops = SIZE(unary_ops);//10
+	int num_arg_types = SIZE(arg_types);//6
 	int num_modes = 10;
 	int i, j, mode;
 	const char *p;
 
 	assert(budget >= 0);
+	//The function will stop will do not statify the condition
 	if (budget == 0) {
 		if (in_param)
 			goto print_constant;
@@ -172,7 +178,7 @@ void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool
 	{
 	case 0:
 		// this mode number is used to determine avoid_mult_div_mod
-		i = 1 + xorshift32() % 3;
+		/*i = 1 + xorshift32() % 3;
 		fprintf(f, "{");
 		for (j = 0; j < i; j++) {
 			if (j)
@@ -180,29 +186,35 @@ void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool
 			print_expression(f, budget / i, mask, avoid_undef, avoid_signed, in_param);
 		}
 		fprintf(f, "}");
-		break;
+		break;*/
 	case 1:
 		// this mode number is used to determine avoid_mult_div_mod
-		i = (xorshift32() % 4) + 1;
+		/*i = (xorshift32() % 4) + 1;
 		fprintf(f, "{%d{", i);
 		print_expression(f, budget / i, mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, "}}");
-		break;
+		break;*/
 	case 2:
 		// this mode number is masked out if in_param is set during mask generation
-		if (avoid_signed)
-			fprintf(f, "$unsigned(");
+		/*/if (avoid_signed)
+			fprintf(f, "(");
 		else
-			fprintf(f, "%s(", xorshift32() % 3 == 0 ? "$signed" :
-					xorshift32() % 2 == 0 ? "$unsigned" : "");
-		print_expression(f, budget, mask, avoid_undef, false, in_param);
+			fprintf(f, "%s(", xorshift32() % 3 == 0 ? "" :
+					xorshift32() % 2 == 0 ? "" : "");
+		print_expression(f, budget, mask, avoid_undef, true, in_param);
+		fprintf(f, ")");
+		break;*/
+	case 3:
+	//Own created case
+		fprintf(f,"(");
+		fprintf(f, "a%d %s b%d",xorshift32()%num_arg_types, bitwise_ops [xorshift32() % SIZE(bitwise_ops)],xorshift32() % num_arg_types);
 		fprintf(f, ")");
 		break;
-	case 3:
 	case 4:
 	case 5:
-		fprintf(f, "(");
-		do {
+	/*	fprintf(f, "(");
+		do { 	
+		
 			p = binary_ops[xorshift32() % num_binary_ops];
 		} while ((avoid_mult_div_mod && (!strcmp(p, "*") || !strcmp(p, "/") || !strcmp(p, "%"))) ||
 				(avoid_undef && (!strcmp(p, "/") || !strcmp(p, "%"))));
@@ -224,13 +236,13 @@ void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool
 			print_expression(f, budget/2, mask, avoid_undef, avoid_signed, in_param);
 		}
 		fprintf(f, ")");
-		break;
+		break;*/
 	case 6:
 	case 7:
-		fprintf(f, "(%s", unary_ops[xorshift32() % num_unary_ops]);
+	/*	fprintf(f, "(%s", bitwise_ops[xorshift32() % SIZE(bitwise_ops)]);
 		print_expression(f, budget, mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, ")");
-		break;
+		break;*/
 	case 8:
 		fprintf(f, "(");
 		print_expression(f, budget / 3, mask, avoid_undef, avoid_signed, in_param);
@@ -244,10 +256,10 @@ void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool
 print_constant:
 		fprintf(f, "(");
 		i = (xorshift32() % 4) + 2;
-		if (xorshift32() % 2 == 0 && !avoid_signed)
+	/*/	if (xorshift32() % 2 == 0 && !avoid_signed)
 			fprintf(f, "%s%d'sd%d", xorshift32() % 2 == 0 ? "-" : "", i, xorshift32() % (1 << (i-1)));
-		else
-			fprintf(f, "%d'd%d", i, xorshift32() % (1 << i));
+		else*/
+			fprintf(f, "1'b%d",  xorshift32() % 1);
 		fprintf(f, ")");
 		break;
 	}
@@ -677,15 +689,24 @@ int main()
 		int sizetyp=SIZE(arg_types);//Check the size of arg_type
 		xorshift32(i);
 		char buffer[1024];
-		snprintf(buffer, 1024, "rtl/expression_%05d.v", i);
+		snprintf(buffer, 1024, "rtl/expression_%d.v", i);
 
 		FILE *f = fopen(buffer, "w");
-		fprintf(f, "module expression_%05d(", i);
+		fprintf(f, "module expression_%d(", i);
 
 		for (char var = 'a'; var <= 'b'; var++)
 		for (int j = 0; j < SIZE(arg_types); j++)
 			fprintf(f, "%c%d, ", var, j);
-            fprintf(f, "y);\n");
+
+			for(int j = 0; j < SIZE(arg_types)*3; j++ )
+			{
+			if( j != SIZE(arg_types)*3-1)
+				fprintf(f, "y%d,",j);
+			else
+				fprintf(f,"y%d",j);
+			}
+
+            fprintf(f, ");\n");
 
 		for (char var = 'a'; var <= 'y'; var++) {
 			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 3 : 1); j++) {
@@ -724,7 +745,7 @@ int main()
 
 		for (int j = 0; j < SIZE(arg_types)*3; j++) {
 			fprintf(f, "  assign y%d = ", j);
-			print_expression(f, 1 + xorshift32() % 20, 0, false, false, false);
+			print_expression(f, 1 + xorshift32() % 20/*16*/, 0, false, true, false);
 			fprintf(f, ";\n");
 		}
 
