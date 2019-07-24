@@ -27,9 +27,9 @@
 #undef GENERATE_CONCAT_OPS
 #undef GENERATE_REPEAT_OPS
 #define GENERATE_EXPRESSIONS
-#define GENERATE_WIDEEXPR
-#define GENERATE_PARTSEL
-
+#undef GENERATE_WIDEEXPR
+#undef GENERATE_PARTSEL
+#define GENERATE_LONGER
 // Use 'make gen_samples'
 // #define ONLY_SAMPLES
 
@@ -63,6 +63,14 @@ const char *small_arg_types[][3] = {
 
 // See Table 5-1 (page 42) in IEEE Std 1364-2005
 // for a list of all Verilog oprators.
+const char *builtin_gate[]={
+	"and",
+	"nand",
+	"nor",
+	"or",
+	"xnor",
+	"xor",
+};
 const char *bitwise_ops[]={
 	"&",	// 1
 	"|",	// 2
@@ -131,7 +139,8 @@ uint32_t xorshift32(uint32_t seed = 0) {
 	return x;
 }
 
-void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool avoid_signed, bool in_param)
+
+void print_expression(FILE *f, int budget, int iter, uint32_t mask, bool avoid_undef, bool avoid_signed, bool in_param)
 {
 	bool avoid_mult_div_mod = false;
 	int num_binary_ops = SIZE(binary_ops);//24
@@ -177,6 +186,20 @@ void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool
 	switch (mode)
 	{
 	case 0:
+	 fprintf(f,"%s", builtin_gate[xorshift32()%SIZE(builtin_gate)]);
+	 fprintf(f,"(y%d,",iter);
+	 for (int i=0;i<rand()%5;i++)
+	 {
+		if	(rand()%10<=5)
+			fprintf(f,"a%d,",xorshift32()%num_arg_types);
+		else
+			fprintf(f,"b%d,",xorshift32()%num_arg_types);
+	 }
+		if	(rand()%10<=5)
+			fprintf(f,"a%d)",xorshift32()%num_arg_types);
+		else
+			fprintf(f,"b%d)",xorshift32()%num_arg_types);
+	 break;
 		// this mode number is used to determine avoid_mult_div_mod
 		/*i = 1 + xorshift32() % 3;
 		fprintf(f, "{");
@@ -187,6 +210,15 @@ void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool
 		}
 		fprintf(f, "}");
 		break;*/
+		fprintf(f, "{");
+			if	(rand()%10<=5)
+			fprintf(f,"a%d",xorshift32()%num_arg_types);
+			else
+			fprintf(f,"b%d",xorshift32()%num_arg_types);
+		fprintf(f,"}");
+		break;
+			
+			
 	case 1:
 		// this mode number is used to determine avoid_mult_div_mod
 		/*i = (xorshift32() % 4) + 1;
@@ -207,10 +239,25 @@ void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool
 	case 3:
 	//Own created case
 		fprintf(f,"(");
-		fprintf(f, "a%d %s b%d",xorshift32()%num_arg_types, bitwise_ops [xorshift32() % SIZE(bitwise_ops)],xorshift32() % num_arg_types);
+		//fprintf(f, "a%d %s b%d",xorshift32()%num_arg_types, bitwise_ops [xorshift32() % SIZE(bitwise_ops)],xorshift32() % num_arg_types);
+			if	(rand()%10<=5)
+			fprintf(f,"a%d",xorshift32()%num_arg_types);
+			else
+			fprintf(f,"b%d",xorshift32()%num_arg_types);
+		fprintf(f, "%s",bitwise_ops [xorshift32() % SIZE(bitwise_ops)]);
+			if	(rand()%10<=5)
+			fprintf(f,"a%d",xorshift32()%num_arg_types);
+			else
+			fprintf(f,"b%d",xorshift32()%num_arg_types);
 		fprintf(f, ")");
 		break;
 	case 4:
+		fprintf(f,"~");
+			if	(rand()%10<=5)
+			fprintf(f,"a%d",xorshift32()%num_arg_types);
+			else
+			fprintf(f,"b%d",xorshift32()%num_arg_types);
+			break;
 	case 5:
 	/*	fprintf(f, "(");
 		do { 	
@@ -245,11 +292,11 @@ void print_expression(FILE *f, int budget, uint32_t mask, bool avoid_undef, bool
 		break;*/
 	case 8:
 		fprintf(f, "(");
-		print_expression(f, budget / 3, mask, avoid_undef, avoid_signed, in_param);
+		print_expression(f, budget / 3, iter,mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, "?");
-		print_expression(f, budget / 3, mask, avoid_undef, avoid_signed, in_param);
+		print_expression(f, budget / 3,iter, mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, ":");
-		print_expression(f, budget / 3, mask, avoid_undef, avoid_signed, in_param);
+		print_expression(f, budget / 3, iter,mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, ")");
 		break;
 	case 9:
@@ -679,7 +726,7 @@ int main()
 	}
 #endif
 
-#ifdef GENERATE_EXPRESSIONS
+#ifdef GENERATE_LONGER
 	for (int i = 0; i < BIG_N; i++)
 	{
 //#ifdef ONLY_SAMPLES
@@ -689,10 +736,12 @@ int main()
 		int sizetyp=SIZE(arg_types);//Check the size of arg_type
 		xorshift32(i);
 		char buffer[1024];
-		snprintf(buffer, 1024, "rtl/expression_%d.v", i);
+		snprintf(buffer, 1024, "rtl/longer_%d.v", i);
 
 		FILE *f = fopen(buffer, "w");
-		fprintf(f, "module expression_%d(", i);
+		for  (int k=0; k< 100; k++)
+		{
+		fprintf(f, "module longer_%d_%d(", i,k);
 
 		for (char var = 'a'; var <= 'b'; var++)
 		for (int j = 0; j < SIZE(arg_types); j++)
@@ -745,7 +794,60 @@ int main()
 
 		for (int j = 0; j < SIZE(arg_types)*3; j++) {
 			fprintf(f, "  assign y%d = ", j);
-			print_expression(f, 1 + xorshift32() % 20/*16*/, 0, false, true, false);
+			print_expression(f, 1 + xorshift32() % 20,j/*16*/, 0, false, true, false);
+			fprintf(f, ";\n");
+		}
+
+		fprintf(f, "endmodule\n");
+		}
+		fclose(f);
+	}
+#endif
+
+#ifdef GENERATE_EXPRESSIONS
+	for (int i = 0; i < BIG_N; i++)
+	{
+//#ifdef ONLY_SAMPLES
+	//	if (i == SMALL_N)
+		//	break;
+//#endif
+		int sizetyp=SIZE(arg_types);//Check the size of arg_type
+		xorshift32(i);
+		char buffer[1024];
+		snprintf(buffer, 1024, "rtl/expression_%d.v", i);
+
+		FILE *f = fopen(buffer, "w");
+		fprintf(f, "module expression_%d(", i);
+
+		for (char var = 'a'; var <= 'b'; var++)
+		for (int j = 0; j < SIZE(arg_types); j++)
+			fprintf(f, "%c%d, ", var, j);
+
+			for(int j = 0; j < SIZE(arg_types)*3; j++ )
+			{
+			if( j != SIZE(arg_types)*3-1)
+				fprintf(f, "y%d,",j);
+			else
+				fprintf(f,"y%d",j);
+			}
+
+            fprintf(f, ");\n");
+
+		for (char var = 'a'; var <= 'y'; var++) {
+			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 3 : 1); j++) {
+				std::string decl = arg_types[j % SIZE(arg_types)][0];
+				strsubst(decl, "{dir}", var == 'y' ? "output" : "input");
+				snprintf(buffer, 1024, "%c%d", var, j);
+				strsubst(decl, "{name}", buffer);
+				fprintf(f, "  %s;\n", decl.c_str());
+			}
+			if (var == 'b')
+				var = 'x';
+			fprintf(f, "\n");
+		}
+		for (int j = 0; j < SIZE(arg_types)*3; j++) {
+			fprintf(f, "  assign y%d = ", j);
+			print_expression(f, 1 + xorshift32() % 20,j/*16*/, 0, false, true, false);
 			fprintf(f, ";\n");
 		}
 
