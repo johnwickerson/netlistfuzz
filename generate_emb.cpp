@@ -1,24 +1,7 @@
-/*
- *  VlogHammer -- A Verilog Synthesis Regression Test
- *
- *  Copyright (C) 2013  Clifford Wolf <clifford@clifford.at>
- *
- *  Permission to use, copy, modify, and/or distribute this software for any
- *  purpose with or without fee is hereby granted, provided that the above
- *  copyright notice and this permission notice appear in all copies.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- *  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- *  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- *  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- *  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- *  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- *  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
-
 #define BIG_N  1000
 #define SMALL_N 100
-#define NUM_EMBPORT_in
+#define NUM_EMBPORT 2
+#define NUM_SUBMODULE 4
 
 #define XORSHIFT_SEED 20190716
 
@@ -27,11 +10,11 @@
 #undef GENERATE_TERNARY_OPS
 #undef GENERATE_CONCAT_OPS
 #undef GENERATE_REPEAT_OPS
-#define GENERATE_EXPRESSIONS
-#define GENERATE_EMBEDDED
+#undef GENERATE_EXPRESSIONS
+#undef GENERATE_EMBEDDED
 #undef GENERATE_WIDEEXPR
 #undef GENERATE_PARTSEL
-#undef GENERATE_LONGER
+#define GENERATE_LONGER
 // Use 'make gen_samples'
 // #define ONLY_SAMPLES
 
@@ -160,10 +143,8 @@ void print_expression(FILE *f, int budget, int iter, uint32_t mask, bool avoid_u
 		char var_char;
 		int var_index;
 		if (!avoid_undef && (xorshift32() % 256) > (mask >> 24)) {
-			//var_char = 'p';
 			var_char='b';
 			var_index = xorshift32() % num_arg_types;
-			//var_index = xorshift32() % (3*num_arg_types);
 		} else {
 			var_char = 'a' + (xorshift32() % 2);
 			var_index = xorshift32() % num_arg_types;
@@ -188,20 +169,7 @@ void print_expression(FILE *f, int budget, int iter, uint32_t mask, bool avoid_u
 	switch (mode)
 	{
 	case 0:
-	 fprintf(f,"%s", builtin_gate[xorshift32()%SIZE(builtin_gate)]);
-	 fprintf(f,"(y%d,",iter);
-	 for (int i=0;i<rand()%5;i++)
-	 {
-		if	(rand()%10<=5)
-			fprintf(f,"a%d,",xorshift32()%num_arg_types);
-		else
-			fprintf(f,"b%d,",xorshift32()%num_arg_types);
-	 }
-		if	(rand()%10<=5)
-			fprintf(f,"a%d)",xorshift32()%num_arg_types);
-		else
-			fprintf(f,"b%d)",xorshift32()%num_arg_types);
-	 break;
+	
 		// this mode number is used to determine avoid_mult_div_mod
 		/*i = 1 + xorshift32() % 3;
 		fprintf(f, "{");
@@ -212,13 +180,7 @@ void print_expression(FILE *f, int budget, int iter, uint32_t mask, bool avoid_u
 		}
 		fprintf(f, "}");
 		break;*/
-		fprintf(f, "{");
-			if	(rand()%10<=5)
-			fprintf(f,"a%d",xorshift32()%num_arg_types);
-			else
-			fprintf(f,"b%d",xorshift32()%num_arg_types);
-		fprintf(f,"}");
-		break;
+		
 			
 			
 	case 1:
@@ -227,6 +189,13 @@ void print_expression(FILE *f, int budget, int iter, uint32_t mask, bool avoid_u
 		fprintf(f, "{%d{", i);
 		print_expression(f, budget / i, mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, "}}");
+		break;*/
+		/*fprintf(f, "{");
+			if	(rand()%10<=5)
+			fprintf(f,"a%d",xorshift32()%num_arg_types);
+			else
+			fprintf(f,"b%d",xorshift32()%num_arg_types);
+		fprintf(f,"}");
 		break;*/
 	case 2:
 		// this mode number is masked out if in_param is set during mask generation
@@ -314,7 +283,7 @@ print_constant:
 	}
 }
 
-void print_embedded(FILE *f, int budget, int iter, uint32_t mask, bool avoid_undef, bool avoid_signed, bool in_param)
+void print_embedded(FILE *f, int budget, int iter, int NumOfsub, uint32_t mask, bool avoid_undef, bool avoid_signed, bool in_param)
 {
 	bool avoid_mult_div_mod = false;
 	int num_binary_ops = SIZE(binary_ops);//24
@@ -332,17 +301,15 @@ void print_embedded(FILE *f, int budget, int iter, uint32_t mask, bool avoid_und
 		char var_char;
 		int var_index;
 		if (!avoid_undef && (xorshift32() % 256) > (mask >> 24)) {
-			//var_char = 'p';
-			var_char='b';
-			var_index = xorshift32() % num_arg_types;
-			//var_index = xorshift32() % (3*num_arg_types);
+			var_char='a';
+			var_index = xorshift32() % NUM_EMBPORT;
 		} else {
 			var_char = 'a' + (xorshift32() % 2);
-			var_index = xorshift32() % num_arg_types;
+			var_index = xorshift32() % NUM_EMBPORT;
 		}
-		if (avoid_signed && (var_index % num_arg_types) >= num_arg_types/2)
-			var_index -= num_arg_types/2;
-		fprintf(f, "%c%d", var_char, var_index);
+		if (avoid_signed && (var_index % NUM_EMBPORT) >= NUM_EMBPORT/2)
+			var_index -= NUM_EMBPORT/2;
+		fprintf(f, "%c%d_sub%d", var_char, var_index,NumOfsub);
 		return;
 	}
 
@@ -360,19 +327,6 @@ void print_embedded(FILE *f, int budget, int iter, uint32_t mask, bool avoid_und
 	switch (mode)
 	{
 	case 0:
-	 fprintf(f,"%s", builtin_gate[xorshift32()%SIZE(builtin_gate)]);
-	 fprintf(f,"(y%d,",iter);
-
-		if	(rand()%10<=5)
-			fprintf(f,"a%d,",(rand()%10 <= 5 ? 0 : 1));
-		else
-			fprintf(f,"b%d,",(rand()%10 <= 5 ? 0 : 1));
-	 
-		if	(rand()%10<=5)
-			fprintf(f,"a%d)",(rand()%10 <= 5 ? 0 : 1));
-		else
-			fprintf(f,"b%d)",(rand()%10 <= 5 ? 0 : 1));
-	 break;		
 			
 	case 1:
 
@@ -382,23 +336,14 @@ void print_embedded(FILE *f, int budget, int iter, uint32_t mask, bool avoid_und
 	//Own created case
 		fprintf(f,"(");
 		//fprintf(f, "a%d %s b%d",xorshift32()%num_arg_types, bitwise_ops [xorshift32() % SIZE(bitwise_ops)],xorshift32() % num_arg_types);
-			if	(rand()%10<=5)
-			fprintf(f,"a%d",(rand()%10 <= 5 ? 0 : 1));
-			else
-			fprintf(f,"b%d",(rand()%10 <= 5 ? 0 : 1));
-		fprintf(f, "%s",bitwise_ops [xorshift32() % SIZE(bitwise_ops)]);
-			if	(rand()%10<=5)
-			fprintf(f,"a%d",(rand()%10 <= 5 ? 0 : 1));
-			else
-			fprintf(f,"b%d",(rand()%10 <= 5 ? 0 : 1));
+			fprintf(f,"a%d_sub%d",xorshift32()%NUM_EMBPORT,NumOfsub);
+			fprintf(f, "%s",bitwise_ops [xorshift32() % SIZE(bitwise_ops)]);
+			fprintf(f,"a%d_sub%d",xorshift32()%NUM_EMBPORT,NumOfsub);
 		fprintf(f, ")");
 		break;
 	case 4:
 		fprintf(f,"~");
-			if	(rand()%10<=5)
-			fprintf(f,"a%d",(rand()%10 <= 5 ? 0 : 1));
-			else
-			fprintf(f,"b%d",(rand()%10 <= 5 ? 0 : 1));
+		fprintf(f,"a%d_sub%d",xorshift32()%NUM_EMBPORT,NumOfsub);
 			break;
 	case 5:
 	
@@ -407,11 +352,11 @@ void print_embedded(FILE *f, int budget, int iter, uint32_t mask, bool avoid_und
 
 	case 8:
 		fprintf(f, "(");
-		print_embedded(f, budget / 3, iter,mask, avoid_undef, avoid_signed, in_param);
+		print_embedded(f, budget / 3, iter, NumOfsub, mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, "?");
-		print_embedded(f, budget / 3,iter, mask, avoid_undef, avoid_signed, in_param);
+		print_embedded(f, budget / 3,iter, NumOfsub,mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, ":");
-		print_embedded(f, budget / 3, iter,mask, avoid_undef, avoid_signed, in_param);
+		print_embedded(f, budget / 3, iter,NumOfsub, mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, ")");
 		break;
 	case 9:
@@ -908,9 +853,28 @@ int main()
 		fprintf(f, "\n");*/
 
 		for (int j = 0; j < SIZE(arg_types)*3; j++) {
+			if(rand()%10<8)
+			{
 			fprintf(f, "  assign y%d = ", j);
 			print_expression(f, 1 + xorshift32() % 20,j/*16*/, 0, false, true, false);
 			fprintf(f, ";\n");
+			}
+			else
+			{
+				 fprintf(f,"  %s(y%d, ", builtin_gate[xorshift32()%SIZE(builtin_gate)],j);
+	 			for (int i=0;i< 1+rand()%5;i++)
+				 {
+					if	(rand()%10<=5)
+						fprintf(f,"a%d, ",xorshift32()%SIZE(arg_types));
+					else
+						fprintf(f,"b%d, ",xorshift32()%SIZE(arg_types));
+				 }
+				if	(rand()%10<=5)
+					fprintf(f,"a%d)",xorshift32()%SIZE(arg_types));
+				else
+					fprintf(f,"b%d)",xorshift32()%SIZE(arg_types));
+					fprintf(f,";\n");
+			}
 		}
 
 		fprintf(f, "endmodule\n");
@@ -929,16 +893,73 @@ int main()
 		snprintf(buffer, 1024, "rtl/embedded_%d.v", i);
 
 		FILE *f = fopen(buffer, "w");
-		for  (int k=0; k< 4; k++)
+		for  (int k=0; k< NUM_SUBMODULE; k++)
 		{
 		fprintf(f, "module  submodule_%d(",k);
 
-		for (int j = 0; j < 2; j++)
-			fprintf(f, "%c_sub%d_in, ", var,k );
+	
+		for (int j = 0; j < NUM_EMBPORT; j++)
+			fprintf(f, "a%d_sub%d, ",j,k );
 
-			for(int j = 0; j < 2; j++ )
+		for(int j = 0; j < NUM_EMBPORT; j++ )
 			{
-			if( j != 1)
+			if( j != NUM_EMBPORT-1)
+				fprintf(f, "y%d_sub%d, ",j,k);
+			else
+				fprintf(f,"y%d_sub%d",j,k);
+			}
+
+            fprintf(f, ");\n");
+
+		for (char var = 'a'; var < 'y'; var++) {
+						if (var == 'b')
+							var = 'y';
+			for (int j = 0; j < NUM_EMBPORT; j++) {
+				std::string decl = arg_types[j % SIZE(arg_types)][0];
+				strsubst(decl, "{dir}", var == 'y' ? "output" : "input");
+				snprintf(buffer, 1024, "%c%d", var, j);
+				strsubst(decl, "{name}", buffer);
+				fprintf(f, "  %s_sub%d;\n", decl.c_str(),k);
+			}
+			fprintf(f, "\n");
+		}
+
+		for (int j = 0; j < NUM_EMBPORT; j++) {
+			if (rand()%10<8)
+			{
+			fprintf(f, "  assign y%d_sub%d = ", j,k);
+			print_embedded(f, 1 + xorshift32() % 20,j/*16*/,k, 0, false, true, false);
+			fprintf(f, ";\n");			
+			}
+					
+			else
+			{
+			fprintf(f,"  %s", builtin_gate[xorshift32()%SIZE(builtin_gate)]);
+			fprintf(f,"(y%d_sub%d,",j,k);
+			fprintf(f,"a%d_sub%d,",xorshift32()%NUM_EMBPORT,k);	 
+			fprintf(f,"a%d_sub%d)",xorshift32()%NUM_EMBPORT,k);
+			fprintf(f,";\n");
+			}
+			
+		}
+
+		fprintf(f, "endmodule\n");
+		fprintf(f,"\n");
+		}
+
+
+		fprintf(f, "module  mainmodule_%d(",i);
+	//	int mod=1;
+		//mod = 1+ (rand()%4);
+//		switch(mod){
+//			case 1:
+			char var ='a';
+			for (int j = 0; j < NUM_EMBPORT*NUM_SUBMODULE; j++)
+			fprintf(f, "%c%d, ", var, j);
+
+			for(int j = 0; j < NUM_EMBPORT*NUM_SUBMODULE; j++ )
+			{
+			if( j != NUM_EMBPORT*NUM_SUBMODULE-1)
 				fprintf(f, "y%d, ",j);
 			else
 				fprintf(f,"y%d",j);
@@ -947,77 +968,55 @@ int main()
             fprintf(f, ");\n");
 
 		for (char var = 'a'; var <= 'y'; var++) {
-			for (int j = 0; j < 1; j++) {
+				if (var == 'b')
+				var = 'y';
+			for (int j = 0; j <  NUM_EMBPORT*NUM_SUBMODULE; j++) {
 				std::string decl = arg_types[j % SIZE(arg_types)][0];
 				strsubst(decl, "{dir}", var == 'y' ? "output" : "input");
 				snprintf(buffer, 1024, "%c%d", var, j);
 				strsubst(decl, "{name}", buffer);
 				fprintf(f, "  %s;\n", decl.c_str());
 			}
-			if (var == 'b')
-				var = 'x';
+		
 			fprintf(f, "\n");
 		}
-
-		for (int j = 0; j < 2; j++) {
-			fprintf(f, "  assign y%d = ", j);
-			print_embedded(f, 1 + xorshift32() % 20,j/*16*/, 0, false, true, false);
-			fprintf(f, ";\n");
-		}
-
-		fprintf(f, "endmodule\n");
-		fprintf(f,"\n");
-		}
-
-
-	/*	fprintf(f, "module  mainmodule_%d(",i);
-		int mod;
-		mod = 1+ (rand()%4);
-		switch(mod){
-			case 1:
-			for (char var = 'c'; var <= 'd'; var++)
-			for (int j = 0; j < 8; j++)
-			fprintf(f, "%c%d, ", var, j);
-
-			for(int j = 0; j < SIZE(arg_types)*3; j++ )
-			{
-			if( j != SIZE(arg_types)*3-1)
-				fprintf(f, "y%d,",j);
+		for (int j=0; j< NUM_SUBMODULE; j++){
+			//informal
+			if (rand()%10>=5){
+				fprintf(f,"submodule_%d (",j);
+				for (int k=NUM_EMBPORT*j; k<NUM_EMBPORT*(j+1);k++){
+					fprintf (f,"a%d,",k);
+				}
+				for (int k= NUM_EMBPORT*j; k<NUM_EMBPORT*(j+1);k++){
+					if (k != (j+1)*NUM_EMBPORT-1)
+						fprintf(f,"y%d,",k);
+					else
+					{
+						fprintf(f,"y%d);\n",k);
+					}
+				}
+			}
+			
+			//formal
 			else
-				fprintf(f,"y%d",j);
-			}
-
-            fprintf(f, ");\n");
-
-		for (char var = 'a'; var <= 'y'; var++) {
-			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 3 : 1); j++) {
-				std::string decl = arg_types[j % SIZE(arg_types)][0];
-				strsubst(decl, "{dir}", var == 'y' ? "output" : "input");
-				snprintf(buffer, 1024, "%c%d", var, j);
-				strsubst(decl, "{name}", buffer);
-				fprintf(f, "  %s;\n", decl.c_str());
-			}
-			if (var == 'b')
-				var = 'x';
-			fprintf(f, "\n");
+			{
+				fprintf(f,"submodule_%d (",j);
+				for (int k=0; k<NUM_EMBPORT;k++){
+					fprintf (f,".a%d_sub%d(a%d),",k,j,j*NUM_EMBPORT+k);
+				}
+				for (int k =0; k<NUM_EMBPORT;k++){
+					if (k != NUM_EMBPORT-1)
+						fprintf(f,".y%d_sub%d(y%d),",k,j,j*NUM_EMBPORT+k);
+					else
+					{
+						fprintf(f,".y%d_sub%d(y%d));\n",k,j,j*NUM_EMBPORT+k);
+					}
+				}
+			}			
 		}
-
-		for (int j = 0; j < SIZE(arg_types)*3; j++) {
-			fprintf(f, "  assign y%d = ", j);
-			print_expression(f, 1 + xorshift32() % 20,j, 0, false, true, false);
-			fprintf(f, ";\n");
-		}
-
 		fprintf(f, "endmodule\n");
-				break;
 
-			case 2:
-				break;
 
-			case 3:
-			case 4:
-}
-*/
 		
 		fclose(f);
 	}
@@ -1064,9 +1063,28 @@ int main()
 			fprintf(f, "\n");
 		}
 		for (int j = 0; j < SIZE(arg_types)*3; j++) {
+			if(rand()%10<8)
+			{
 			fprintf(f, "  assign y%d = ", j);
 			print_expression(f, 1 + xorshift32() % 20,j/*16*/, 0, false, true, false);
 			fprintf(f, ";\n");
+			}
+			else
+			{
+				 fprintf(f,"  %s(y%d, ", builtin_gate[xorshift32()%SIZE(builtin_gate)],j);
+	 			for (int i=0;i< 1+rand()%5;i++)
+				 {
+					if	(rand()%10<=5)
+						fprintf(f,"a%d, ",xorshift32()%SIZE(arg_types));
+					else
+						fprintf(f,"b%d, ",xorshift32()%SIZE(arg_types));
+				 }
+				if	(rand()%10<=5)
+					fprintf(f,"a%d)",xorshift32()%SIZE(arg_types));
+				else
+					fprintf(f,"b%d)",xorshift32()%SIZE(arg_types));
+					fprintf(f,";\n");
+			}
 		}
 
 		fprintf(f, "endmodule\n");
