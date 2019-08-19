@@ -1,9 +1,8 @@
 #define BIG_N  1000
 #define SMALL_N 100
-#define NUM_EMBPORT 2
-#define NUM_SUBMODULE 4
 
-#define XORSHIFT_SEED 20190716
+
+#define XORSHIFT_SEED 20190803
 
 #undef GENERATE_BINARY_OPS
 #undef GENERATE_UNARY_OPS
@@ -14,7 +13,10 @@
 #undef GENERATE_EMBEDDED
 #undef GENERATE_WIDEEXPR
 #undef GENERATE_PARTSEL
-#define GENERATE_LONGER
+#undef GENERATE_LONGER
+#define GENERATE_FLIPFLOP
+#undef GENERATE_STATEMACHINE
+
 // Use 'make gen_samples'
 // #define ONLY_SAMPLES
 
@@ -34,7 +36,7 @@ const char *arg_types[][3] = {
 	{ "{dir} {name}", "{name}", "6" },	// 02
 	{ "{dir} {name}", "{name}", "4" },	// 03
 	{ "{dir} {name}", "{name}", "5" },	// 04
-	{ "{dir} {name}", "{name}", "6" }	// 05
+	{ "{dir} {name}", "{name}", "6" },	// 05
 };
 
 const char *small_arg_types[][3] = {
@@ -283,7 +285,7 @@ print_constant:
 	}
 }
 
-void print_embedded(FILE *f, int budget, int iter, int NumOfsub, uint32_t mask, bool avoid_undef, bool avoid_signed, bool in_param)
+void print_embedded(FILE *f, int budget, int iter, int NumOfsub, int NUM_EMBPORT, int NUM_SUBMODULE, uint32_t mask, bool avoid_undef, bool avoid_signed, bool in_param)
 {
 	bool avoid_mult_div_mod = false;
 	int num_binary_ops = SIZE(binary_ops);//24
@@ -352,11 +354,11 @@ void print_embedded(FILE *f, int budget, int iter, int NumOfsub, uint32_t mask, 
 
 	case 8:
 		fprintf(f, "(");
-		print_embedded(f, budget / 3, iter, NumOfsub, mask, avoid_undef, avoid_signed, in_param);
+		print_embedded(f, budget / 3, iter, NumOfsub, NUM_EMBPORT,NUM_SUBMODULE,mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, "?");
-		print_embedded(f, budget / 3,iter, NumOfsub,mask, avoid_undef, avoid_signed, in_param);
+		print_embedded(f, budget / 3,iter, NumOfsub,NUM_EMBPORT,NUM_SUBMODULE,mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, ":");
-		print_embedded(f, budget / 3, iter,NumOfsub, mask, avoid_undef, avoid_signed, in_param);
+		print_embedded(f, budget / 3, iter,NumOfsub, NUM_EMBPORT,NUM_SUBMODULE,mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, ")");
 		break;
 	case 9:
@@ -799,7 +801,7 @@ int main()
 		snprintf(buffer, 1024, "rtl/longer_%d.v", i);
 
 		FILE *f = fopen(buffer, "w");
-		for  (int k=0; k< 100; k++)
+		for  (int k=0; k< 1; k++)
 		{
 		fprintf(f, "module longer_%d_%d(", i,k);
 
@@ -807,9 +809,9 @@ int main()
 		for (int j = 0; j < SIZE(arg_types); j++)
 			fprintf(f, "%c%d, ", var, j);
 
-			for(int j = 0; j < SIZE(arg_types)*3; j++ )
+			for(int j = 0; j < SIZE(arg_types)*300; j++ )
 			{
-			if( j != SIZE(arg_types)*3-1)
+			if( j != SIZE(arg_types)*300-1)
 				fprintf(f, "y%d,",j);
 			else
 				fprintf(f,"y%d",j);
@@ -818,7 +820,7 @@ int main()
             fprintf(f, ");\n");
 
 		for (char var = 'a'; var <= 'y'; var++) {
-			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 3 : 1); j++) {
+			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 300: 1); j++) {
 				std::string decl = arg_types[j % SIZE(arg_types)][0];
 				strsubst(decl, "{dir}", var == 'y' ? "output" : "input");
 				snprintf(buffer, 1024, "%c%d", var, j);
@@ -852,7 +854,7 @@ int main()
 		}
 		fprintf(f, "\n");*/
 
-		for (int j = 0; j < SIZE(arg_types)*3; j++) {
+		for (int j = 0; j < SIZE(arg_types)*300; j++) {
 			if(rand()%10<8)
 			{
 			fprintf(f, "  assign y%d = ", j);
@@ -886,7 +888,8 @@ int main()
 
 #ifdef GENERATE_EMBEDDED
 	for (int i = 0; i < BIG_N; i++)
-	{
+	{  int NUM_SUBMODULE=rand()%10;
+		int NUM_EMBPORT=rand()%10;
 		int sizetyp=SIZE(arg_types);//Check the size of arg_type
 		xorshift32(i);
 		char buffer[1024];
@@ -895,7 +898,7 @@ int main()
 		FILE *f = fopen(buffer, "w");
 		for  (int k=0; k< NUM_SUBMODULE; k++)
 		{
-		fprintf(f, "module  submodule_%d(",k);
+			fprintf(f, "module  submodule_%d(",k);
 
 	
 		for (int j = 0; j < NUM_EMBPORT; j++)
@@ -928,7 +931,7 @@ int main()
 			if (rand()%10<8)
 			{
 			fprintf(f, "  assign y%d_sub%d = ", j,k);
-			print_embedded(f, 1 + xorshift32() % 20,j/*16*/,k, 0, false, true, false);
+			print_embedded(f, 1 + xorshift32() % 20,j/*16*/,k,NUM_EMBPORT,NUM_SUBMODULE, 0, false, true, false);
 			fprintf(f, ";\n");			
 			}
 					
@@ -1021,6 +1024,7 @@ int main()
 		fclose(f);
 	}
 #endif
+
 #ifdef GENERATE_EXPRESSIONS
 	for (int i = 0; i < BIG_N; i++)
 	{
@@ -1039,7 +1043,6 @@ int main()
 		for (char var = 'a'; var <= 'b'; var++)
 		for (int j = 0; j < SIZE(arg_types); j++)
 			fprintf(f, "%c%d, ", var, j);
-
 			for(int j = 0; j < SIZE(arg_types)*3; j++ )
 			{
 			if( j != SIZE(arg_types)*3-1)
@@ -1139,6 +1142,73 @@ int main()
 	}
 #endif
 
+#ifdef GENERATE_FLIPFLOP
+ for( int i = 0; i < BIG_N; i++){
+	 int sizetyp=SIZE(arg_types);//Check the size of arg_type
+		xorshift32(i);
+		char buffer[1024];
+		snprintf(buffer, 1024, "rtl/flipflop_%d.v", i);
+
+		FILE *f = fopen(buffer, "w");
+		fprintf(f, "module sequential_%d(", i);
+
+		for (char var = 'a'; var <= 'b'; var++)
+		for (int j = 0; j < SIZE(arg_types); j++)
+			fprintf(f, "%c%d, ", var, j);
+
+			for(int j = 0; j < SIZE(arg_types)*3; j++ )
+			{
+			if( j != SIZE(arg_types)*3-1)
+				fprintf(f, "y%d,",j);
+			else
+				fprintf(f,"y%d",j);
+			}
+
+            fprintf(f, ");\n");
+
+		for (char var = 'a'; var <= 'y'; var++) {
+			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 3 : 1); j++) {
+				std::string decl = arg_types[j % SIZE(arg_types)][0];
+				strsubst(decl, "{dir}", var == 'y' ? "output" : "input");
+				snprintf(buffer, 1024, "%c%d", var, j);
+				strsubst(decl, "{name}", buffer);
+				fprintf(f, "  %s;\n", decl.c_str());
+			}
+			if (var == 'b')
+				var = 'x';
+			fprintf(f, "\n");
+		}
+		for (int j = 0; j < SIZE(arg_types)*3; j++) {
+			if(rand()%10<8)
+			{
+			fprintf(f, "  assign y%d = ", j);
+			print_expression(f, 1 + xorshift32() % 20,j/*16*/, 0, false, true, false);
+			fprintf(f, ";\n");
+			}
+			else
+			{
+				 fprintf(f,"  %s(y%d, ", builtin_gate[xorshift32()%SIZE(builtin_gate)],j);
+	 			for (int i=0;i< 1+rand()%5;i++)
+				 {
+					if	(rand()%10<=5)
+						fprintf(f,"a%d, ",xorshift32()%SIZE(arg_types));
+					else
+						fprintf(f,"b%d, ",xorshift32()%SIZE(arg_types));
+				 }
+				if	(rand()%10<=5)
+					fprintf(f,"a%d)",xorshift32()%SIZE(arg_types));
+				else
+					fprintf(f,"b%d)",xorshift32()%SIZE(arg_types));
+					fprintf(f,";\n");
+			}
+		}
+
+		fprintf(f, "endmodule\n");
+		fclose(f);
+ }
+#endif
+
+
 #ifdef GENERATE_PARTSEL
 	for (int i = 0; i < BIG_N; i++)
 	{
@@ -1205,5 +1275,3 @@ int main()
 
 	return 0;
 }
-
-
