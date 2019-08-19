@@ -14,7 +14,7 @@
 #undef GENERATE_WIDEEXPR
 #undef GENERATE_PARTSEL
 #undef GENERATE_LONGER
-#define GENERATE_FLIPFLOP
+#undef GENERATE_FLIPFLOP
 #undef GENERATE_STATEMACHINE
 
 // Use 'make gen_samples'
@@ -170,21 +170,7 @@ void print_expression(FILE *f, int budget, int iter, uint32_t mask, bool avoid_u
 	budget--;
 	switch (mode)
 	{
-	case 0:
-	
-		// this mode number is used to determine avoid_mult_div_mod
-		/*i = 1 + xorshift32() % 3;
-		fprintf(f, "{");
-		for (j = 0; j < i; j++) {
-			if (j)
-				fprintf(f, ",");
-			print_expression(f, budget / i, mask, avoid_undef, avoid_signed, in_param);
-		}
-		fprintf(f, "}");
-		break;*/
-		
-			
-			
+	case 0:	
 	case 1:
 		// this mode number is used to determine avoid_mult_div_mod
 		/*i = (xorshift32() % 4) + 1;
@@ -234,7 +220,6 @@ void print_expression(FILE *f, int budget, int iter, uint32_t mask, bool avoid_u
 	case 5:
 	/*	fprintf(f, "(");
 		do { 	
-		
 			p = binary_ops[xorshift32() % num_binary_ops];
 		} while ((avoid_mult_div_mod && (!strcmp(p, "*") || !strcmp(p, "/") || !strcmp(p, "%"))) ||
 				(avoid_undef && (!strcmp(p, "/") || !strcmp(p, "%"))));
@@ -1148,66 +1133,119 @@ int main()
 		xorshift32(i);
 		char buffer[1024];
 		snprintf(buffer, 1024, "rtl/flipflop_%d.v", i);
-
+		int NUM_FF = rand()%sizetyp + 1;
+		int trigger = rand()%4;
 		FILE *f = fopen(buffer, "w");
-		fprintf(f, "module sequential_%d(", i);
+		fprintf(f, "module flipflop_%d(", i);
 
-		for (char var = 'a'; var <= 'b'; var++)
-		for (int j = 0; j < SIZE(arg_types); j++)
-			fprintf(f, "%c%d, ", var, j);
+		switch (trigger)
+		{
+		case 1:
+			fprintf(f, "clk, reset,  ");
+			break;
+		case 2:
+			fprintf(f, "clk ,reset_n, ");
+			break;
+		case 3:
+			fprintf(f, "clk_n, reset, ");
+			break;
+		case 4:
+			fprintf(f, "clk_n, reset_n, ");
+			break;
+		default:
+			fprintf(f, "clk, reset,  ");
+			break;
+		}
 
-			for(int j = 0; j < SIZE(arg_types)*3; j++ )
-			{
-			if( j != SIZE(arg_types)*3-1)
-				fprintf(f, "y%d,",j);
-			else
-				fprintf(f,"y%d",j);
-			}
-
-            fprintf(f, ");\n");
+            fprintf(f, "a, y);\n");
+				switch (trigger)
+		{
+		case 1:
+			fprintf(f, "  input clk, reset;\n");
+			break;
+		case 2:
+			fprintf(f, "  input clk ,reset_n;\n");
+			break;
+		case 3:
+			fprintf(f, " input clk_n, reset;\n");
+			break;
+		case 4:
+			fprintf(f, "  input clk_n, reset_n;\n ");
+			break;
+		default:
+			fprintf(f, "  input clk, reset; \n");
+			break;
+		}
 
 		for (char var = 'a'; var <= 'y'; var++) {
-			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 3 : 1); j++) {
-				std::string decl = arg_types[j % SIZE(arg_types)][0];
-				strsubst(decl, "{dir}", var == 'y' ? "output" : "input");
-				snprintf(buffer, 1024, "%c%d", var, j);
+				std::string decl = arg_types [0][0];
+				if (var=='a')
+				strsubst(decl, "{dir}", "input");
+				else if(var=='y')
+				strsubst(decl, "{dir}", "output reg");
+				else
+				strsubst(decl, "{dir}", "reg");			
+				snprintf(buffer, 1024, "%c", var);
 				strsubst(decl, "{name}", buffer);
 				fprintf(f, "  %s;\n", decl.c_str());
-			}
-			if (var == 'b')
+			
+			if (var == 97+NUM_FF)
 				var = 'x';
-			fprintf(f, "\n");
 		}
-		for (int j = 0; j < SIZE(arg_types)*3; j++) {
-			if(rand()%10<8)
-			{
-			fprintf(f, "  assign y%d = ", j);
-			print_expression(f, 1 + xorshift32() % 20,j/*16*/, 0, false, true, false);
-			fprintf(f, ";\n");
-			}
-			else
-			{
-				 fprintf(f,"  %s(y%d, ", builtin_gate[xorshift32()%SIZE(builtin_gate)],j);
-	 			for (int i=0;i< 1+rand()%5;i++)
-				 {
-					if	(rand()%10<=5)
-						fprintf(f,"a%d, ",xorshift32()%SIZE(arg_types));
-					else
-						fprintf(f,"b%d, ",xorshift32()%SIZE(arg_types));
-				 }
-				if	(rand()%10<=5)
-					fprintf(f,"a%d)",xorshift32()%SIZE(arg_types));
-				else
-					fprintf(f,"b%d)",xorshift32()%SIZE(arg_types));
-					fprintf(f,";\n");
-			}
+			switch (trigger)
+		{
+		case 1:
+			fprintf(f, "always@(posedge  clk or posedge reset)\n");
+			break;
+		case 2:
+			fprintf(f, "always@(posedge  clk or negedge reset_n)\n");
+			break;
+		case 3:
+			fprintf(f, "always@(negedge  clk or posedge reset)\n");
+			break;
+		case 4:
+			fprintf(f, "always@(negedge  clk or negedge reset)\n");
+			break;
+		default:
+			fprintf(f, "always@(posedge  clk or posedge reset)\n");
+			break;
 		}
-
+		fprintf(f,"begin\n");
+		
+		if ((trigger==2)||(trigger==4))	
+			fprintf(f,"	if(reset_n)\n");
+		else
+			fprintf(f,"	if(reset)\n");
+		fprintf(f,"		begin\n");
+		fprintf(f,"			");
+			for (char j = 'b'; j < 'b'+NUM_FF; j++)
+			{
+				fprintf(f,"%c = 0; ",j);
+			}
+		fprintf(f,"y = 0;\n");
+		fprintf(f,"		end\n");
+		fprintf(f,"	else\n");
+		fprintf(f,"		begin\n");
+		fprintf(f,"			");
+		char j_pre;
+			for (char j = 'b'; j <='y'; j++)
+			{
+				if (j == 'y')
+				{
+					fprintf(f,"y = %c;\n",j_pre);
+					break;
+				}
+				fprintf(f,"%c = %c; ",j,j-1);
+				j_pre = j;
+				if (j == 97+NUM_FF)
+				j = 'x';
+			}
+		fprintf(f,"		end\n");
+		fprintf(f,"end\n");
 		fprintf(f, "endmodule\n");
 		fclose(f);
  }
 #endif
-
 
 #ifdef GENERATE_PARTSEL
 	for (int i = 0; i < BIG_N; i++)
