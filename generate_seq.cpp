@@ -1,9 +1,8 @@
 #define BIG_N  1000
 #define SMALL_N 100
-#define NUM_EMBPORT 2
-#define NUM_SUBMODULE 4
 
-#define XORSHIFT_SEED 20190716
+
+#define XORSHIFT_SEED 20190803
 
 #undef GENERATE_BINARY_OPS
 #undef GENERATE_UNARY_OPS
@@ -14,7 +13,10 @@
 #undef GENERATE_EMBEDDED
 #undef GENERATE_WIDEEXPR
 #undef GENERATE_PARTSEL
-#define GENERATE_LONGER
+#undef GENERATE_LONGER
+#undef GENERATE_FLIPFLOP
+#undef GENERATE_STATEMACHINE
+
 // Use 'make gen_samples'
 // #define ONLY_SAMPLES
 
@@ -34,7 +36,7 @@ const char *arg_types[][3] = {
 	{ "{dir} {name}", "{name}", "6" },	// 02
 	{ "{dir} {name}", "{name}", "4" },	// 03
 	{ "{dir} {name}", "{name}", "5" },	// 04
-	{ "{dir} {name}", "{name}", "6" }	// 05
+	{ "{dir} {name}", "{name}", "6" },	// 05
 };
 
 const char *small_arg_types[][3] = {
@@ -168,21 +170,7 @@ void print_expression(FILE *f, int budget, int iter, uint32_t mask, bool avoid_u
 	budget--;
 	switch (mode)
 	{
-	case 0:
-	
-		// this mode number is used to determine avoid_mult_div_mod
-		/*i = 1 + xorshift32() % 3;
-		fprintf(f, "{");
-		for (j = 0; j < i; j++) {
-			if (j)
-				fprintf(f, ",");
-			print_expression(f, budget / i, mask, avoid_undef, avoid_signed, in_param);
-		}
-		fprintf(f, "}");
-		break;*/
-		
-			
-			
+	case 0:	
 	case 1:
 		// this mode number is used to determine avoid_mult_div_mod
 		/*i = (xorshift32() % 4) + 1;
@@ -232,7 +220,6 @@ void print_expression(FILE *f, int budget, int iter, uint32_t mask, bool avoid_u
 	case 5:
 	/*	fprintf(f, "(");
 		do { 	
-		
 			p = binary_ops[xorshift32() % num_binary_ops];
 		} while ((avoid_mult_div_mod && (!strcmp(p, "*") || !strcmp(p, "/") || !strcmp(p, "%"))) ||
 				(avoid_undef && (!strcmp(p, "/") || !strcmp(p, "%"))));
@@ -283,7 +270,7 @@ print_constant:
 	}
 }
 
-void print_embedded(FILE *f, int budget, int iter, int NumOfsub, uint32_t mask, bool avoid_undef, bool avoid_signed, bool in_param)
+void print_embedded(FILE *f, int budget, int iter, int NumOfsub, int NUM_EMBPORT, int NUM_SUBMODULE, uint32_t mask, bool avoid_undef, bool avoid_signed, bool in_param)
 {
 	bool avoid_mult_div_mod = false;
 	int num_binary_ops = SIZE(binary_ops);//24
@@ -352,11 +339,11 @@ void print_embedded(FILE *f, int budget, int iter, int NumOfsub, uint32_t mask, 
 
 	case 8:
 		fprintf(f, "(");
-		print_embedded(f, budget / 3, iter, NumOfsub, mask, avoid_undef, avoid_signed, in_param);
+		print_embedded(f, budget / 3, iter, NumOfsub, NUM_EMBPORT,NUM_SUBMODULE,mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, "?");
-		print_embedded(f, budget / 3,iter, NumOfsub,mask, avoid_undef, avoid_signed, in_param);
+		print_embedded(f, budget / 3,iter, NumOfsub,NUM_EMBPORT,NUM_SUBMODULE,mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, ":");
-		print_embedded(f, budget / 3, iter,NumOfsub, mask, avoid_undef, avoid_signed, in_param);
+		print_embedded(f, budget / 3, iter,NumOfsub, NUM_EMBPORT,NUM_SUBMODULE,mask, avoid_undef, avoid_signed, in_param);
 		fprintf(f, ")");
 		break;
 	case 9:
@@ -799,7 +786,7 @@ int main()
 		snprintf(buffer, 1024, "rtl/longer_%d.v", i);
 
 		FILE *f = fopen(buffer, "w");
-		for  (int k=0; k< 100; k++)
+		for  (int k=0; k< 1; k++)
 		{
 		fprintf(f, "module longer_%d_%d(", i,k);
 
@@ -807,9 +794,9 @@ int main()
 		for (int j = 0; j < SIZE(arg_types); j++)
 			fprintf(f, "%c%d, ", var, j);
 
-			for(int j = 0; j < SIZE(arg_types)*3; j++ )
+			for(int j = 0; j < SIZE(arg_types)*300; j++ )
 			{
-			if( j != SIZE(arg_types)*3-1)
+			if( j != SIZE(arg_types)*300-1)
 				fprintf(f, "y%d,",j);
 			else
 				fprintf(f,"y%d",j);
@@ -818,7 +805,7 @@ int main()
             fprintf(f, ");\n");
 
 		for (char var = 'a'; var <= 'y'; var++) {
-			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 3 : 1); j++) {
+			for (int j = 0; j <  SIZE(arg_types)*(var == 'y' ? 300: 1); j++) {
 				std::string decl = arg_types[j % SIZE(arg_types)][0];
 				strsubst(decl, "{dir}", var == 'y' ? "output" : "input");
 				snprintf(buffer, 1024, "%c%d", var, j);
@@ -852,7 +839,7 @@ int main()
 		}
 		fprintf(f, "\n");*/
 
-		for (int j = 0; j < SIZE(arg_types)*3; j++) {
+		for (int j = 0; j < SIZE(arg_types)*300; j++) {
 			if(rand()%10<8)
 			{
 			fprintf(f, "  assign y%d = ", j);
@@ -886,7 +873,8 @@ int main()
 
 #ifdef GENERATE_EMBEDDED
 	for (int i = 0; i < BIG_N; i++)
-	{
+	{  int NUM_SUBMODULE=rand()%10;
+		int NUM_EMBPORT=rand()%10;
 		int sizetyp=SIZE(arg_types);//Check the size of arg_type
 		xorshift32(i);
 		char buffer[1024];
@@ -895,7 +883,7 @@ int main()
 		FILE *f = fopen(buffer, "w");
 		for  (int k=0; k< NUM_SUBMODULE; k++)
 		{
-		fprintf(f, "module  submodule_%d(",k);
+			fprintf(f, "module  submodule_%d(",k);
 
 	
 		for (int j = 0; j < NUM_EMBPORT; j++)
@@ -928,7 +916,7 @@ int main()
 			if (rand()%10<8)
 			{
 			fprintf(f, "  assign y%d_sub%d = ", j,k);
-			print_embedded(f, 1 + xorshift32() % 20,j/*16*/,k, 0, false, true, false);
+			print_embedded(f, 1 + xorshift32() % 20,j/*16*/,k,NUM_EMBPORT,NUM_SUBMODULE, 0, false, true, false);
 			fprintf(f, ";\n");			
 			}
 					
@@ -1021,6 +1009,7 @@ int main()
 		fclose(f);
 	}
 #endif
+
 #ifdef GENERATE_EXPRESSIONS
 	for (int i = 0; i < BIG_N; i++)
 	{
@@ -1039,7 +1028,6 @@ int main()
 		for (char var = 'a'; var <= 'b'; var++)
 		for (int j = 0; j < SIZE(arg_types); j++)
 			fprintf(f, "%c%d, ", var, j);
-
 			for(int j = 0; j < SIZE(arg_types)*3; j++ )
 			{
 			if( j != SIZE(arg_types)*3-1)
@@ -1139,6 +1127,126 @@ int main()
 	}
 #endif
 
+#ifdef GENERATE_FLIPFLOP
+ for( int i = 0; i < BIG_N; i++){
+	 int sizetyp=SIZE(arg_types);//Check the size of arg_type
+		xorshift32(i);
+		char buffer[1024];
+		snprintf(buffer, 1024, "rtl/flipflop_%d.v", i);
+		int NUM_FF = rand()%sizetyp + 1;
+		int trigger = rand()%4;
+		FILE *f = fopen(buffer, "w");
+		fprintf(f, "module flipflop_%d(", i);
+
+		switch (trigger)
+		{
+		case 1:
+			fprintf(f, "clk, reset,  ");
+			break;
+		case 2:
+			fprintf(f, "clk ,reset_n, ");
+			break;
+		case 3:
+			fprintf(f, "clk_n, reset, ");
+			break;
+		case 4:
+			fprintf(f, "clk_n, reset_n, ");
+			break;
+		default:
+			fprintf(f, "clk, reset,  ");
+			break;
+		}
+
+            fprintf(f, "a, y);\n");
+				switch (trigger)
+		{
+		case 1:
+			fprintf(f, "  input clk, reset;\n");
+			break;
+		case 2:
+			fprintf(f, "  input clk ,reset_n;\n");
+			break;
+		case 3:
+			fprintf(f, " input clk_n, reset;\n");
+			break;
+		case 4:
+			fprintf(f, "  input clk_n, reset_n;\n ");
+			break;
+		default:
+			fprintf(f, "  input clk, reset; \n");
+			break;
+		}
+
+		for (char var = 'a'; var <= 'y'; var++) {
+				std::string decl = arg_types [0][0];
+				if (var=='a')
+				strsubst(decl, "{dir}", "input");
+				else if(var=='y')
+				strsubst(decl, "{dir}", "output reg");
+				else
+				strsubst(decl, "{dir}", "reg");			
+				snprintf(buffer, 1024, "%c", var);
+				strsubst(decl, "{name}", buffer);
+				fprintf(f, "  %s;\n", decl.c_str());
+			
+			if (var == 97+NUM_FF)
+				var = 'x';
+		}
+			switch (trigger)
+		{
+		case 1:
+			fprintf(f, "always@(posedge  clk or posedge reset)\n");
+			break;
+		case 2:
+			fprintf(f, "always@(posedge  clk or negedge reset_n)\n");
+			break;
+		case 3:
+			fprintf(f, "always@(negedge  clk or posedge reset)\n");
+			break;
+		case 4:
+			fprintf(f, "always@(negedge  clk or negedge reset)\n");
+			break;
+		default:
+			fprintf(f, "always@(posedge  clk or posedge reset)\n");
+			break;
+		}
+		fprintf(f,"begin\n");
+		
+		if ((trigger==2)||(trigger==4))	
+			fprintf(f,"	if(reset_n)\n");
+		else
+			fprintf(f,"	if(reset)\n");
+		fprintf(f,"		begin\n");
+		fprintf(f,"			");
+			for (char j = 'b'; j < 'b'+NUM_FF; j++)
+			{
+				fprintf(f,"%c = 0; ",j);
+			}
+		fprintf(f,"y = 0;\n");
+		fprintf(f,"		end\n");
+		fprintf(f,"	else\n");
+		fprintf(f,"		begin\n");
+		fprintf(f,"			");
+		char j_pre;
+			for (char j = 'b'; j <='y'; j++)
+			{
+				if (j == 'y')
+				{
+					fprintf(f,"y = %c;\n",j_pre);
+					break;
+				}
+				fprintf(f,"%c = %c; ",j,j-1);
+				j_pre = j;
+				if (j == 97+NUM_FF)
+				j = 'x';
+			}
+		fprintf(f,"		end\n");
+		fprintf(f,"end\n");
+		fprintf(f, "endmodule\n");
+		fclose(f);
+ }
+#endif
+
 #ifdef GENERATE_PARTSEL
 	for (int i = 0; i < BIG_N; i++)
 	{
@@ -1205,5 +1313,3 @@ int main()
 
 	return 0;
 }
-
-
