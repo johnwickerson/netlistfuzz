@@ -1,18 +1,19 @@
-#define BIG_N  1000
+#define BIG_N 100
 #define SMALL_N 100
 
 
-#define XORSHIFT_SEED 20190803
+#define XORSHIFT_SEED 20190820
 
 #undef GENERATE_BINARY_OPS
 #undef GENERATE_UNARY_OPS
 #undef GENERATE_TERNARY_OPS
 #undef GENERATE_CONCAT_OPS
 #undef GENERATE_REPEAT_OPS
-#undef GENERATE_EXPRESSIONS
-#undef GENERATE_EMBEDDED
 #undef GENERATE_WIDEEXPR
 #undef GENERATE_PARTSEL
+
+#undef GENERATE_EXPRESSIONS
+#undef GENERATE_EMBEDDED
 #undef GENERATE_LONGER
 #undef GENERATE_FLIPFLOP
 #define GENERATE_STATEMACHINE
@@ -1221,7 +1222,12 @@ int main()
 		fprintf(f,"			");
 			for (char j = 'b'; j < 'b'+NUM_FF; j++)
 			{
-				fprintf(f,"%c <= 0; ",j);
+				if (j == 'b'+NUM_FF - 1)
+				{
+					fprintf(f,"%c <= 1'b0;\n",j);
+					break;
+				}
+				fprintf(f,"%c <= 1'b0; ",j);
 			}
 		fprintf(f,"		end\n");
 		fprintf(f,"	else\n");
@@ -1282,7 +1288,7 @@ for(char i = 'a'; i < 'a'+NUM_IN; i++)
 {
 	fprintf(f,"%c, ",i);
 }
-            fprintf(f, " y);\n");
+            fprintf(f, "y);\n");
 				switch (trigger)
 		{
 		case 1:
@@ -1399,6 +1405,14 @@ for (int i = 0; i <=NUM_FSM; i++)
 	in = in + 2;
 }
 		fprintf(f,"end\n");
+if (xorshift32()%10>5)
+{
+	fprintf(f, "y = (p_state == S%d);\n",xorshift32()%NUM_FSM);
+}
+else
+	{
+		fprintf(f,"assign y = (%c %s p_state == S%d);\n",'a'+rand()%NUM_IN, bitwise_ops[xorshift32()%SIZE(bitwise_ops)], xorshift32()%NUM_FSM);
+	}
 		fprintf(f, "endmodule\n");
 		fclose(f);
  }
