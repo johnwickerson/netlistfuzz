@@ -1,11 +1,10 @@
 #define BIG_N 100
 #define SMALL_N 100
 
-
 #define XORSHIFT_SEED 20190820
 
 #undef GENERATE_BINARY_OPS
-#undef GENERATE_UNARY_OPS
+#undef GENEXORSHIFT_SEEDRATE_UNARY_OPS
 #undef GENERATE_TERNARY_OPS
 #undef GENERATE_CONCAT_OPS
 #undef GENERATE_REPEAT_OPS
@@ -1318,7 +1317,7 @@ for(char i = 'a'; i < 'a'+NUM_IN; i++)
 				strsubst(decl, "{name}", buffer);
 				fprintf(f, "  %s;\n", decl.c_str());
 			
-			if (var == 97+NUM_IN)
+			if (var == 96+NUM_IN)
 				var = 'x';
 		}
 		fprintf(f,"  reg [%d:0] p_state, n_state;\n",int(log2(NUM_FSM)));
@@ -1367,23 +1366,24 @@ for(char i = 'a'; i < 'a'+NUM_IN; i++)
 		fprintf(f,"		begin\n");
 		fprintf(f,"			p_state <= n_state;\n");
 		fprintf(f,"		end\n");
-fprintf(f,"always @(p_state, ");
+		fprintf(f,"end\n");
+fprintf(f,"always @(p_state or ");
 for(char i = 'a'; i <='a'+NUM_IN; i++)
 {
-	if (i == 'a'+NUM_IN)
+	if (i == 'a'+NUM_IN-1)
 	{
 		fprintf(f,"%c)\n",i);
 		break;
 	}
 	else
-	fprintf(f,"%c, ",i);
+	fprintf(f,"%c or ",i);
 }
 fprintf(f,"  begin\n");
-fprintf(f,"case: (p_state)\n");
+fprintf(f,"case (p_state)\n");
 char in = 'a';
 for (int i = 0; i <=NUM_FSM; i++)
 {	
-	if (i == NUM_FSM)
+	if (i == NUM_FSM-1)
 	{
 	fprintf(f,"S%d: begin\n",i);
 	fprintf(f,"		if (%c %s %c)\n", in,binary_ops [xorshift32() % SIZE(binary_ops)],in+1);
@@ -1391,7 +1391,7 @@ for (int i = 0; i <=NUM_FSM; i++)
 	fprintf(f,"		else\n");
 	fprintf(f,"		n_state = S%d;\n",i);
 	fprintf(f,"end\n");	
-	fprintf(f,"defalut: n_state = S0;\n");
+	fprintf(f,"default: n_state = S0;\n");
 	fprintf(f,"endcase\n");
 	break;
 	}
@@ -1411,7 +1411,7 @@ if (xorshift32()%10>5)
 }
 else
 	{
-		fprintf(f,"assign y = (%c %s p_state == S%d);\n",'a'+rand()%NUM_IN, bitwise_ops[xorshift32()%SIZE(bitwise_ops)], xorshift32()%NUM_FSM);
+		fprintf(f,"assign y = (%c %s p_state == S%d);\n",'a'+rand()%NUM_IN-1, bitwise_ops[xorshift32()%SIZE(bitwise_ops)], xorshift32()%NUM_FSM);
 	}
 		fprintf(f, "endmodule\n");
 		fclose(f);
