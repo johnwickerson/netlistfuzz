@@ -1344,10 +1344,10 @@ for(char i = 'a'; i < 'a'+NUM_IN; i++)
 			fprintf(f, "always @(posedge clk or negedge reset_n)\n");
 			break;
 		case 3:
-			fprintf(f, "always @(negedge clk or posedge reset)\n");
+			fprintf(f, "always @(negedge clk_n or posedge reset)\n");
 			break;
 		case 4:
-			fprintf(f, "always @(negedge clk or negedge reset)\n");
+			fprintf(f, "always @(negedge clk_n or negedge reset_n)\n");
 			break;
 		default:
 			fprintf(f, "always @(posedge clk or posedge reset)\n");
@@ -1407,7 +1407,7 @@ for (int i = 0; i <=NUM_FSM; i++)
 		fprintf(f,"end\n");
 if (xorshift32()%10>5)
 {
-	fprintf(f, "y = (p_state == S%d);\n",xorshift32()%NUM_FSM);
+	fprintf(f, "assign y = (p_state == S%d);\n",xorshift32()%NUM_FSM);
 }
 else
 	{
