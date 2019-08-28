@@ -1,0 +1,6 @@
+1.Best situation is O(1), bounded situation
+2.FASM and embedded have two degree of freedom worst situation is O(N2) other are O(N)
+3.Recuison budget /3 each time, converge in the end
+4.Constant time in for loop
+5.For in (a-y) maximum *26 -- constant
+6.Expectation
