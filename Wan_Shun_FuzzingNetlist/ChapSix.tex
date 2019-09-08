@@ -1,0 +1,16 @@
+\chapter{Conclusion}
+\renewcommand{\baselinestretch}{\mystretch}
+\label{chap:Con}
+\PARstart{I}{n} conclusion, this project successfully applied the fuzz testing to test open-source HST. Not only all core objectives but also 80\% of extensive objective were achieved. Detected bugs were analysed through the qualitative and quantitative method. The result shows that ABC is a reliable HST which has a strict limitation on Verilog input. Designed grey-box fuzzer reaches 90\% probability of finding at least one bug. The generation time of this fuzzer is in a reasonable range. The designed tool-flow is useful and well-structured.
+
+With further polishing, the designed testing tool can be promoted as a distributed Linux software in a collaborative public manner. The measured data and results were reliable through multiple measurements and averaged values. Following section discuss the future improvement of this project.
+
+
+\section{Future work}
+This project can be improved in future analysis: 
+\begin{itemize}
+\item Bug injection technology \cite{calagar2014source} could be involved to evaluate the bug-finding ability of this project. For example, the synthesis process of ABC can be manipulated to yield a netlist with bugs. This buggy netlist could be used to check whether the injected bug can be detected by our tool. 
+    \item Fuzzing algorithm can be improved by deep learning and integrated with a coverage-guided feedback loop. Williams developed ''Covered'' is a Verilog code coverage detecting tool and it could be used to in the feedback loop.   
+    \item Big-data can be combined with this project in bug identification and analysis.
+    \item Automatic correction of the detected bugs. This could refer to Fujita's research of the automatic correction of logical bugs \cite{fujita2018automatic}.
+\end{itemize} 

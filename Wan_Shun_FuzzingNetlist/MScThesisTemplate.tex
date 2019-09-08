@@ -1,0 +1,167 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This is root file of the thesis. %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\documentclass[11pt,a4paper,oneside]{thesis}
+\documentclass[11pt,a4paper]{thesis}
+\usepackage{amssymb}
+\usepackage{amsbsy}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\xmark}{\ding{55}}%
+\usepackage{amsthm} % This is only for theorem and proofs.
+\usepackage{setspace}
+\usepackage{listings}%code listing
+\usepackage{xcolor}%commend colour
+\usepackage{array}%tabular width
+\usepackage{multirow}%
+\usepackage{multicol}%
+\usepackage{subfigure}%
+\usepackage{courier}%inline code
+\usepackage{fontspec}
+\usepackage{minted}
+\setmonofont{Courier New}
+\definecolor{CPPLight}  {HTML} {686868}
+\definecolor{CPPSteel}  {HTML} {888888}
+\definecolor{CPPDark}   {HTML} {262626}
+\definecolor{CPPBlue}   {HTML} {4172A3}
+\definecolor{CPPBrown}  {HTML} {A07040}
+\definecolor{CPPRed}    {HTML} {AD4D3A}
+\definecolor{CPPViolet} {HTML} {7040A0}
+\definecolor{CPPGray}  {HTML} {B8B8B8}
+\definecolor{CPPGreen}  {HTML} {487818}%commends green
+%\newfontfamily{\monaco}{Monaco}
+%\lstset{basicstyle=\monaco}
+
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex]{graphicx}
+\else
+\usepackage{graphicx}
+\fi
+\usepackage{cite}
+\title{Fuzzing Netlist}
+\author{Shun Wan}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% including page setting & fancyhdr.
+\setlength{\textwidth}{500pt}
+\addtolength{\hoffset}{-20pt}
+\setlength{\textheight}{650pt}
+\setlength{\headsep}{30pt}
+
+% Set left margin - The default is 1 inch.
+\setlength{\oddsidemargin}{2cm}
+%\setlength{\evensidemargin}{0.63cm}
+
+% Set width of the text - What is left will be the right margin.
+\setlength{\textwidth}{15cm} %5.7in
+
+% Set top margin - The default is 1 inch
+\setlength{\topmargin}{-1.5cm}
+
+% Set height of the header
+\setlength{\headheight}{1.2cm}
+
+% Set vertical distance between the header and the text
+\setlength{\headsep}{1.2cm}
+
+% Set height of the text
+\setlength{\textheight}{23cm} %9in
+
+% Set vertical distance between the text and the
+% bottom of footer
+\setlength{\footskip}{0.4cm}
+
+% set belowcaptionskip.
+\addtolength{\belowcaptionskip}{2ex}
+
+\setlength{\parindent}{2em}
+%\setlength{\parindent}{0pt}
+%%%%%%%%%%%%%%%%%%%%%
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+
+\renewcommand{\chaptermark}[1]{\markright{\thechapter.\ #1}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\fancyhf{}
+\fancyhead[LE,RO]{\bfseries\thepage}
+\fancyhead[LO]{\bfseries\rightmark}
+\fancyhead[RE]{\bfseries\leftmark}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+\addtolength{\headheight}{0.5pt}
+\fancypagestyle{plain}{
+  \fancyhead[LE,RO]{\bfseries\thepage}
+  \fancyhead[LO]{}
+  \fancyhead[RE]{}
+  \renewcommand{\headrulewidth}{0.5pt}
+} 
+
+\def\mystretch{1.5}
+
+\newlength{\figX}
+\newlength{\figY}
+\newlength{\tmplen}
+
+\newlength{\matFigX}
+\newlength{\matFigY}
+
+\setlength{\matFigX}{4.04in} \setlength{\matFigY}{3.04in}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex}
+\setlength{\parindent}{3em}
+\sloppy
+
+\hyphenation{another}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The Beginning of a LaTeX document
+\begin{document}
+
+\input{MScThesisTemplate/TitlePage.tex}
+
+%%%%%%%%%%%%%
+\frontmatter
+\doublespace
+\setlength{\tmplen}{\parskip}
+\setlength{\parskip}{-1ex}
+\input{MScThesisTemplate/Abstract.tex}
+\input{MScThesisTemplate/ChapAckn.tex}
+\tableofcontents
+\listoffigures
+\listoftables
+\renewcommand{\baselinestretch}{\mystretch}
+\input{MScThesisTemplate/ChapAbbr.tex}
+\setlength{\parskip}{\tmplen}
+
+%%%%%%%%%%%%
+\mainmatter
+\fancyhead[RE]{\emph{Chapter \thechapter}}
+\renewcommand{\baselinestretch}{\mystretch}
+% Use \input to include your chapters as illustrated below
+\input{MScThesisTemplate/ChapOne.tex}
+\input{MScThesisTemplate/ChapTwo.tex}
+\input{MScThesisTemplate/ChapThree.tex}
+\input{MScThesisTemplate/ChapFour.tex}
+\input{MScThesisTemplate/ChapFive.tex}
+\input{MScThesisTemplate/ChapSix.tex}
+
+\input{MScThesisTemplate/RefList.tex}
+\fancyhead[RE]{\emph{References}}
+
+\appendix
+\input{MScThesisTemplate/AppA.tex}
+\input{MScThesisTemplate/AppB.tex}
+\input{MScThesisTemplate/AppC.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The end of a LaTeX document
+\end{document}
+
+%%%%%%%%%%The END%%%%%%%%%%%%%%%%%%%% 
